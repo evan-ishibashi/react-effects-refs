@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./App.css";
+
+import  DrawCard  from "./DrawCard"
 const BASE_URL = "https://deckofcardsapi.com/api/deck/";
 
 function App() {
@@ -12,7 +14,8 @@ function App() {
     const [deck, setDeck] = useState({
         isLoading: true,
         data: null,
-        error: null,
+        currCard: null,
+        errors: null,
     });
 
     useEffect(() => {
@@ -20,11 +23,17 @@ function App() {
             try {
                 const response = await fetch(`${BASE_URL}new/`);
                 const data = await response.json();
-                setDeck({ data, isLoading: false, errors: null });
+                setDeck({
+                    isLoading: false,
+                    data,
+                    currCard: null,
+                    errors: null
+                });
             } catch (err) {
                 setDeck({
-                    data,
                     isLoading: false,
+                    data:null,
+                    currCard:null,
                     errors: err,
                 });
             }
@@ -32,10 +41,26 @@ function App() {
         getDeck();
     }, []);
 
-    if (deck.isLoading) return <h2>LOADING...</h2>;
-    else if (deck.error) return <b>Oh no! {error}</b>;
+    async function drawOne(){
+        const resp = await fetch(`${BASE_URL}${deck.data.deck_id}/draw/?count=1`);
+        const cardData = await resp.json();
+        console.log("cardData",cardData)
+        setDeck({
+                    data : {...deck.data, remaining:(cardData.remaining)},
+                    isLoading: false,
+                    currCard: cardData.cards[0],
+                    errors: null,
+        });
+    }
 
-    return <div className="App"></div>;
+
+
+    if (deck.isLoading) return <h2>LOADING...</h2>;
+    else if (deck.errors) return <b>Oh no! {deck.errors}</b>;
+
+    return <div className="App">
+        <DrawCard deck={deck} drawOne={drawOne}/>
+    </div>;
 }
 
 export default App;
